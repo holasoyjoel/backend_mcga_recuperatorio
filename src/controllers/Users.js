@@ -1,4 +1,5 @@
 const User = require("../models/Users");
+const bcryptjs = require("bcryptjs");
 
 const getUsers = async(req , res)=>{
     const usuarios = await User.find();
@@ -21,19 +22,30 @@ const getUser = async(req , res)=>{
 }
 
 const postUser = async(req , res)=>{
-    const {id,apellido,nombre,fechaNacimiento,dni,edad,nacionalidad,email,password} = req.body;
 
-    const existeUsuario = await User.find({id:id});
+    let ultimoId = await User.find();
+    if(ultimoId.length == 0){
+        ultimoId = 1
+    }
+    else{
+        ultimoId = ultimoId[ultimoId.length -1].id + 1
+    }
+
+    console.log("ultimo id es ",ultimoId)
+    const { apellido,nombre,fechaNacimiento,dni,edad,nacionalidad,email,password} = req.body;
+   
+
+    const existeUsuario = await User.find({id:ultimoId});
     const existeEmail = await User.find({email:email});
     console.log(existeUsuario);
     if(existeUsuario.length > 0){
-        return res.status(403).json({error: true ,msg: `Id: ${id} ya existente.`})
+        return res.status(403).json({error: true ,msg: `Id: ${ultimoId} ya existente.`})
     }
     if(existeEmail.length > 0){
         return res.status(403).json({error: true ,msg: `Email: ${email} ya existente.`})
     }
 
-    if(!id){
+    if(!ultimoId){
         return res.status(403).json({error: true ,msg: "Id es requerido."})
     }
     if(!apellido){
@@ -60,8 +72,11 @@ const postUser = async(req , res)=>{
     if(!password){
         return res.status(403).json({error: true ,msg: "Password nacimiento es requerido."})
     }
+    
+    
+    
+    const nuevoUsuario = new User({"id":ultimoId, apellido, nombre, fechaNacimiento, dni, edad, nacionalidad, email, password});
 
-    const nuevoUsuario = new  User({id, apellido, nombre, fechaNacimiento, dni, edad, nacionalidad, email, password});
 
     await nuevoUsuario.save((err)=>{
         if(err){
